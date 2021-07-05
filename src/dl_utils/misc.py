@@ -12,7 +12,7 @@ import os
 import sys
 import torch
 import torch.multiprocessing as mp
-from tensor_funcs import numpyify
+from dl_utils.tensor_funcs import numpyify
 
 
 def reload():

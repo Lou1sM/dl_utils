@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from pdb import set_trace
 from scipy.optimize import linear_sum_assignment
-from src.tensor_funcs import numpyify
+from dl_utils.tensor_funcs import numpyify
 
 
 def unique_labels(labels):
@@ -54,7 +54,7 @@ def get_fanout_trans_dict(trans_from_labels,trans_to_labels,subsample_size):
             sample_indices = np.random.choice(range(trans_from_labels.shape[0]),subsample_size,replace=False)
             trans_from_labels_subsample = trans_from_labels[sample_indices]
             trans_to_labels_subsample = trans_to_labels[sample_indices]
-            if unique_labels(trans_from_labels_subsample) == unique_trans_from_labels and unique_labels(trans_from_labels_subsample) == unique_trans_to_labels: break
+            if unique_labels(trans_from_labels_subsample) == unique_trans_from_labels and unique_labels(trans_to_labels_subsample) == unique_trans_to_labels: break
         cost_matrix = np.array([[label_assignment_cost(trans_from_labels_subsample,trans_to_labels_subsample,l1,l2) for l2 in unique_trans_from_labels if l2 != -1] for l1 in unique_trans_from_labels if l1 != -1])
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
     try: assert len(col_ind) == len(set(trans_from_labels[trans_from_labels != -1]))
@@ -117,6 +117,26 @@ def debable(labellings_list,pivot):
 def accuracy(labels1,labels2,subsample_size='none'):
     trans_labels = translate_labellings(labels1,labels2,subsample_size)
     return sum(trans_labels==numpyify(labels2))/len(labels1)
+
+def f1(bin_classifs_pred,bin_classifs_gt):
+    tp = sum(bin_classifs_pred*bin_classifs_gt)
+    if tp==0: return 0
+    fp = sum(bin_classifs_pred*~bin_classifs_gt)
+    fn = sum(~bin_classifs_pred*bin_classifs_gt)
+
+    prec = tp/(tp+fp)
+    rec = tp/(tp+fn)
+    return (2*prec*rec)/(prec+rec)
+
+def mean_f1(labels1,labels2):
+    subsample_size = min(len(labels1),30000)
+    trans_labels = translate_labellings(labels1,labels2,subsample_size)
+    lab_f1s = []
+    for lab in unique_labels(trans_labels):
+        lab_booleans1 = trans_labels==lab
+        lab_booleans2 = labels2==lab
+        lab_f1s.append(f1(lab_booleans1,lab_booleans2))
+    return sum(lab_f1s)/len(lab_f1s)
 
 def compress_labels(labels):
     if isinstance(labels,torch.Tensor): labels = labels.detach().cpu().numpy()
