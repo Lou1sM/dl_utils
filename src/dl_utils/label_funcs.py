@@ -73,7 +73,7 @@ def get_fanin_trans_dict(trans_from_labels,trans_to_labels,subsample_size):
             sample_indices = np.random.choice(range(trans_from_labels.shape[0]),subsample_size,replace=False)
             trans_from_labels_subsample = trans_from_labels[sample_indices]
             trans_to_labels_subsample = trans_to_labels[sample_indices]
-            if unique_labels(trans_from_labels_subsample) == unique_trans_from_labels and unique_labels(trans_from_labels_subsample) == unique_trans_to_labels: break
+            if unique_labels(trans_from_labels_subsample) == unique_trans_from_labels and unique_labels(trans_to_labels_subsample) == unique_trans_to_labels: break
         sample_indices = np.random.choice(range(trans_from_labels.shape[0]),subsample_size,replace=False)
         trans_from_labels_subsample = trans_from_labels[sample_indices]
         trans_to_labels_subsample = trans_to_labels[sample_indices]
