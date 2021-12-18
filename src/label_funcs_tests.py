@@ -10,10 +10,29 @@ l3 = np.tile(np.arange(20),500)
 label_funcs.translate_labellings(l1,l2,subsample_size='none')
 print("Should see a user warning:")
 label_funcs.translate_labellings(np.array([]),np.array([]),subsample_size='none')
+
+# Size preserving
 a,b = label_funcs.get_num_labels(l3),label_funcs.get_num_labels(l2)
 c = label_funcs.get_num_labels(label_funcs.translate_labellings(l3,l2))
 d = label_funcs.get_num_labels(label_funcs.translate_labellings(l3,l2,preserve_sizes=True))
 print(f"Should be 20,10,10,20: {int(a)},{int(b)},{int(c)},{int(d)}")
+
+x=np.load('x.npy')
+y=np.load('y.npy')
+nx = label_funcs.get_num_labels(x)
+ny = label_funcs.get_num_labels(y)
+assert nx==6
+assert ny==5
+
+tx = label_funcs.get_num_labels(label_funcs.translate_labellings(x,y,preserve_sizes=True))
+assert tx==6
+tx1 = label_funcs.get_num_labels(label_funcs.translate_labellings(x,y,preserve_sizes=False))
+assert tx1==5
+
+label_funcs.get_num_labels(label_funcs.translate_labellings(l2,l3))
+label_funcs.get_num_labels(label_funcs.translate_labellings(l2,l3,preserve_sizes=True))
+
+# Unique labels
 assert label_funcs.unique_labels(l1) == label_funcs.unique_labels(l2)
 assert (label_funcs.compress_labels(l1+1)[0] == l1).all()
 assert list(label_funcs.label_counts(l2).values())==[1000]*10
