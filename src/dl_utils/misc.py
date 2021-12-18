@@ -79,6 +79,11 @@ def compute_multihots(l,probs):
     multihots = hits.sum(axis=0) # (dset_size, num_labels)
     return multihots
 
+def n_digitify(number,num_digits):
+    with_zeros = "0"*(num_digits-len(str(number))) + str(number)
+    assert len(with_zeros) == num_digits and int(with_zeros) == number
+    return with_zeros
+
 def check_latents(dec,latents,show,stacked):
     _, axes = plt.subplots(6,2,figsize=(7,7))
     for i,latent in enumerate(latents):

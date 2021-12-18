@@ -16,6 +16,13 @@ def add_colour_dimension(item):
         else: return item.unsqueeze(1) # batch, size, size
     else: return item.unsqueeze(0) # size, size
 
+def recursive_np_or(boolean_arrays):
+    if len(boolean_arrays) == 1: return boolean_arrays[0]
+    return np.logical_or(boolean_arrays[0],recursive_np_or(boolean_arrays[1:]))
+
+def recursive_np_and(boolean_arrays):
+    if len(boolean_arrays) == 1: return boolean_arrays[0]
+    return np.logical_and(boolean_arrays[0],recursive_np_and(boolean_arrays[1:]))
 
 def noiseify(pytensor,constant):
     noise = torch.randn_like(pytensor)
@@ -31,6 +38,14 @@ def numpyify(x):
     if isinstance(x,np.ndarray): return x
     elif isinstance(x,list): return np.array(x)
     elif torch.is_tensor(x): return x.detach().cpu().numpy()
+
+def mean_off_diagonal(mat):
+    upper_sum = np.triu(mat,1).sum()
+    lower_sum = np.tril(mat,-1).sum()
+    num_el = np.prod(mat.shape) - mat.shape[0]
+    return (upper_sum + lower_sum)/num_el
+
+def cudify(x): return torch.tensor(x,device='cuda')
 
 def print_tensors(*tensors):
     """Only works for one-element tensors"""
