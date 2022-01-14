@@ -3,3 +3,5 @@ dist/*
 build/*
 src/tags
 tags
+setup.cfg
+src/dl_utils385.egg-info/*
