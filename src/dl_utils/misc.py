@@ -164,8 +164,10 @@ def votes_to_probs(multihots,prior_correct):
     return probs_array
 
 def check_dir(directory):
-    if not os.path.isdir(directory):
+    exists_already = os.path.isdir(directory)
+    if not exists_already:
         os.makedirs(directory)
+    return exists_already
 
 def torch_save(checkpoint,directory,fname):
     check_dir(directory)
