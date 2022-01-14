@@ -57,12 +57,11 @@ def get_trans_dict(trans_from_labels,trans_to_labels,subsample_size='none',prese
     trans_dict = {reverse_tdf[k]:reverse_tdt[v] for k,v in trans_dict.items()}
     if preserve_sizes and num_from_labs > num_to_labs:
         for i in leftovers:
-            if i not in trans_dict.keys():
-                tl = reverse_tdf[i]
-                assert tl not in trans_dict.keys()
-                missing_target = min([i for i in range(num_from_labs) if i not in trans_dict.values()])
-                trans_dict[tl]=missing_target
-        assert set(trans_dict.keys()) == unique_labels(trans_from_labels)
+            tl = reverse_tdf[i]
+            assert tl not in trans_dict.keys()
+            missing_target = min([i for i in range(num_from_labs) if i not in trans_dict.values()])
+            trans_dict[tl]=missing_target
+        if not set(trans_dict.keys()) == unique_labels(trans_from_labels): set_trace()
 
     trans_dict[-1] = -1
     return trans_dict,leftovers
