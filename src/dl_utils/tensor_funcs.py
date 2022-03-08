@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+import os
+import matplotlib.pyplot as plt
 
 def to_float_tensor(item): return item.float().div_(255.)
 def add_colour_dimension(item):
@@ -23,6 +25,21 @@ def recursive_np_or(boolean_arrays):
 def recursive_np_and(boolean_arrays):
     if len(boolean_arrays) == 1: return boolean_arrays[0]
     return np.logical_and(boolean_arrays[0],recursive_np_and(boolean_arrays[1:]))
+
+def np_load_all(dir_name,comb_method='stack',restrict=-1,sort=True):
+    all_fnames = os.listdir(dir_name)
+    if restrict != -1:
+        restrict = len(all_fnames)
+        all_fnames = all_fnames[:restrict]
+    if sort:
+        all_fnames.sort()
+    all_arrs = [np.load(os.path.join(dir_name,fn)) for fn in all_fnames]
+    if comb_method=='none':
+        return all_arrs
+    elif comb_method=='cat':
+        return np.concatenate(all_arrs)
+    elif comb_method=='stack':
+        return np.stack(all_arrs)
 
 def noiseify(pytensor,constant):
     noise = torch.randn_like(pytensor)
@@ -50,3 +67,14 @@ def cudify(x): return torch.tensor(x,device='cuda')
 def print_tensors(*tensors):
     """Only works for one-element tensors"""
     print(*[t.item() for t in tensors])
+
+def display_image(t):
+    a = numpyify(t.squeeze())
+    if a.ndim==2:
+        plt.imshow(a); plt.show()
+    elif a.ndim==3 and a.shape[0]==3:
+        plt.imshow(np.transpose(a,(1,2,0))); plt.show()
+    elif a.ndim==3 and a.shape[2]==3:
+        plt.imshow(a); plt.show()
+    else:
+        raise TypeError(f"invalid tensor shape {a.shape} for displaying images")

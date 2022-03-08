@@ -1,5 +1,4 @@
 from dl_utils import label_funcs
-from pdb import set_trace
 import numpy as np
 
 print("\nTESTING LABEL_FUNCS\n")
@@ -38,6 +37,13 @@ assert (label_funcs.compress_labels(l1+1)[0] == l1).all()
 assert list(label_funcs.label_counts(l2).values())==[1000]*10
 print(f"Should see a number close to 0.1:\n\t{label_funcs.accuracy(l1,l2)}")
 print(f"Should see a number close to 0.1:\n\t{label_funcs.mean_f1(l1,l2)}")
+
+for _ in range(10):
+    test_num_labs = np.random.randint(2,15)
+    test_size = np.random.randint(100,10000)
+    x=np.random.randint(test_num_labs,size=(test_size))
+    assert label_funcs.label_counts(x) == label_funcs.label_counts_without_torch(x)
+
 
 babled = np.random.randint(10,size=(5,1000))
 babled1 = [np.random.randint(10,size=(1000)) for _ in range(5)]

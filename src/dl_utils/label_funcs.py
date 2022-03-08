@@ -167,7 +167,7 @@ def accuracy(preds,targets,subsample_size='none',precision=4):
     trans_labels = translate_labellings(preds,targets,subsample_size)
     return round(sum(trans_labels==numpyify(targets))/len(preds),precision)
 
-def f1(bin_classifs_pred,bin_classifs_gt,precision=4):
+def f1(bin_classifs_pred,bin_classifs_gt,float_point_precision=4):
     tp = sum(bin_classifs_pred*bin_classifs_gt)
     if tp==0: return 0
     fp = sum(bin_classifs_pred*~bin_classifs_gt)
@@ -199,9 +199,17 @@ def get_num_labels(labels):
     assert labels.ndim == 1
     return len([lab for lab in unique_labels(labels) if lab != -1])
 
-def label_counts(labels):
+def label_counts_without_torch(labels):
     assert labels.ndim == 1
     return {x:sum(labels==x) for x in unique_labels(labels)}
+
+def label_counts(labels):
+    assert labels.ndim == 1
+    torch_labels = torch.tensor(labels).long()
+    torch_unique = torch_labels.unique().long()
+    max_label = torch_unique.max()
+    multihot = torch.zeros(max_label+1).long().index_put(indices=[torch_labels],values=torch.ones_like(torch_labels),accumulate=True)
+    return {x.item():multihot[x].item() for x in torch_unique}
 
 def dummy_labels(num_classes,size):
     main_chunk = np.tile(np.arange(num_classes),size//num_classes)
@@ -247,3 +255,8 @@ def masked_mode(pred_array,mask='none'):
     x = mask.any(axis=0)
     return np.array([stats.mode([lab for lab,b in zip(pred_array[:,j],mask[:,j]) if b]).mode[0] if bx else -1 for bx,j in zip(x,range(pred_array.shape[1]))])
 
+def open_eve(scores):
+    eve_diff = (scores.mean(axis=1).var(unbiased=False) - scores.var(axis=1,unbiased=False).mean())
+    eve_diff_as_frac = eve_diff / scores.var(unbiased=False)
+    if not eve_diff_as_frac <= 1: set_trace()
+    return eve_diff_as_frac
