@@ -29,7 +29,6 @@ def recursive_np_and(boolean_arrays):
 def np_load_all(dir_name,comb_method='stack',restrict=-1,sort=True):
     all_fnames = os.listdir(dir_name)
     if restrict != -1:
-        restrict = len(all_fnames)
         all_fnames = all_fnames[:restrict]
     if sort:
         all_fnames.sort()
