@@ -11,9 +11,21 @@ import numpy as np
 import os
 import sys
 import torch
+from torch.utils import data
 import torch.multiprocessing as mp
 from dl_utils.tensor_funcs import numpyify
 
+class CifarLikeDataset(data.Dataset):
+    def __init__(self,x,y,transform=None):
+        self.data, self.targets = x,y
+        self.transform = transform
+        assert len(x) == len(y)
+    def __len__(self): return len(self.data)
+    def __getitem__(self,idx):
+        batch_x, batch_y = self.data[idx], self.targets[idx]
+        if self.transform:
+            batch_x = self.transform(batch_x)
+        return batch_x, batch_y
 
 def reload():
     import importlib, utils
@@ -80,6 +92,7 @@ def compute_multihots(l,probs):
     return multihots
 
 def n_digitify(number,num_digits):
+    """Turn 'number' into a string of length 'num_digits', adding leading zeroes as needed"""
     with_zeros = "0"*(num_digits-len(str(number))) + str(number)
     assert len(with_zeros) == num_digits and int(with_zeros) == number
     return with_zeros

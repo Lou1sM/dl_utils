@@ -19,10 +19,16 @@ def unique_labels(labels):
         print("Unrecognized type for labels:", type(labels))
         raise TypeError
 
-def label_assignment_cost(labels1,labels2,label1,label2):
-    if len(labels1) != len(labels2):
-        raise TranslationError(f"len labels1 {len(labels1)} must equal len labels2 {len(labels2)}")
-    return len([idx for idx in range(len(labels2)) if labels1[idx]==label1 and labels2[idx] != label2])
+def label_assignment_cost(labelling1,labelling2,label1,label2):
+    if len(labelling1) != len(labelling2):
+        raise TranslationError(f"len labelling1 {len(labelling1)} must equal len labelling2 {len(labelling2)}")
+    disagreements = np.logical_and(labelling1==label1, (labelling2!=label2))
+    return disagreements.sum()
+
+def label_assignment_cost_without_np(labelling1,labelling2,label1,label2):
+    if len(labelling1) != len(labelling2):
+        raise TranslationError(f"len labelling1 {len(labelling1)} must equal len labelling2 {len(labelling2)}")
+    return len([idx for idx in range(len(labelling2)) if labelling1[idx]==label1 and labelling2[idx] != label2])
 
 def translate_labellings(from_labels,to_labels,subsample_size='none',preserve_sizes=False):
     if from_labels.shape != to_labels.shape:
@@ -238,7 +244,7 @@ def avoid_minus_ones_lf_wrapper(lf):
     def wrapped_lf(pred,target,multiplicative_mask='none'):
         avoidance_mask = target!=-1
         loss_array = lf(pred[avoidance_mask],target[avoidance_mask])
-        if multiplicative_mask is not 'none':
+        if multiplicative_mask != 'none':
             loss_array *= multiplicative_mask[avoidance_mask]
         return loss_array.mean()
     return wrapped_lf
@@ -250,7 +256,7 @@ def true_cross_entropy_with_logits(pred,target):
     return (-(pred*target).sum(dim=1) + torch.logsumexp(pred,dim=1)).mean()
 
 def masked_mode(pred_array,mask='none'):
-    if mask is 'none':
+    if mask == 'none':
         return stats.mode(pred_array,axis=0).mode[0]
     x = mask.any(axis=0)
     return np.array([stats.mode([lab for lab,b in zip(pred_array[:,j],mask[:,j]) if b]).mode[0] if bx else -1 for bx,j in zip(x,range(pred_array.shape[1]))])
