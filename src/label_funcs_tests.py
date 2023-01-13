@@ -10,6 +10,24 @@ label_funcs.translate_labellings(l1,l2,subsample_size='none')
 print("Should see a user warning:")
 label_funcs.translate_labellings(np.array([]),np.array([]),subsample_size='none')
 
+def check_round_trip(orig,perfect):
+    vocab = label_funcs.unique_labels(orig)
+    l2_size = 2*len(vocab) if perfect else len(vocab)//2
+    random_trans_dict = dict(zip(vocab,np.random.choice(range(l2_size),size=len(vocab),replace=not perfect)))
+    translated = np.array([random_trans_dict[x] for x in orig])
+    recovered = label_funcs.translate_labellings(translated,orig)
+    if perfect: assert (recovered==orig).all()
+    else: assert recovered.shape == orig.shape
+
+def check_perfect_and_imperfect_round_trip(orig):
+    check_round_trip(orig,True)
+    check_round_trip(orig,False)
+
+check_perfect_and_imperfect_round_trip(np.random.randint(10,size=(1000)))
+check_perfect_and_imperfect_round_trip(np.random.randint(20,size=(1000)))
+l1_vocab = np.random.choice(50,size=10,replace=False)
+check_perfect_and_imperfect_round_trip(np.random.choice(l1_vocab,size=(1000)))
+
 # Size preserving
 a,b = label_funcs.get_num_labels(l3),label_funcs.get_num_labels(l2)
 c = label_funcs.get_num_labels(label_funcs.translate_labellings(l3,l2))
