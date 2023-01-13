@@ -3,39 +3,20 @@ warnings.filterwarnings('ignore')
 from datetime import datetime
 from sklearn.metrics import normalized_mutual_info_score as mi_func
 from pdb import set_trace
-import gc
 import math
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+except ImportError:
+    pass
 import numpy as np
 import os
 import sys
-import torch
-from torch.utils import data
-import torch.multiprocessing as mp
 from dl_utils.tensor_funcs import numpyify
-
-class CifarLikeDataset(data.Dataset):
-    def __init__(self,x,y,transform=None):
-        self.data, self.targets = x,y
-        self.transform = transform
-        assert len(x) == len(y)
-    def __len__(self): return len(self.data)
-    def __getitem__(self,idx):
-        batch_x, batch_y = self.data[idx], self.targets[idx]
-        if self.transform:
-            batch_x = self.transform(batch_x)
-        return batch_x, batch_y
 
 def reload():
     import importlib, utils
     importlib.reload(utils)
-
-def save_and_check(enc,dec,fname):
-    torch.save({'enc': enc, 'dec': dec},fname)
-    loaded = torch.load(fname)
-    e,d = loaded['enc'], loaded['dec']
-    test_mods_eq(e,enc); test_mods_eq(d,dec)
 
 def show_xb(xb): plt.imshow(xb[0,0]); plt.show()
 def get_datetime_stamp(): return str(datetime.now()).split()[0][5:] + '_'+str(datetime.now().time()).split()[0][:-7]
@@ -48,15 +29,16 @@ def get_user_yesno_answer(question):
         print("Please answer 'y' or 'n'")
         return(get_user_yesno_answer(question))
 
-def set_experiment_dir(exp_name, overwrite):
-    exp_name = get_datetime_stamp() if exp_name == "" else exp_name
-    exp_dir = f'../experiments/{exp_name}'
+def set_experiment_dir(exp_dir, overwrite, use_datetime_as_dir=False, name_of_trials='try'):
+    if exp_dir == "" or use_datetime_as_dir:
+        exp_dir = get_datetime_stamp()
     if not os.path.isdir(exp_dir): os.makedirs(exp_dir)
-    elif exp_name.startswith('try') or overwrite: pass
-    elif not get_user_yesno_answer(f'An experiment with name {exp_name} has already been run, do you want to overwrite?'):
+    elif exp_dir.startswith(name_of_trials) or overwrite: pass
+    elif not get_user_yesno_answer(f'An experiment with name {exp_dir} has already been run, do you want to overwrite?'):
         print('Please rerun command with a different experiment name')
         sys.exit()
     return exp_dir
+
 def test_mods_eq(m1,m2):
     for a,b in zip(m1.parameters(),m2.parameters()):
         assert (a==b).all()
@@ -79,9 +61,11 @@ def scatter_clusters(embeddings,labels,show=False):
     return ax
 
 def asMinutes(s):
-    m = math.floor(s / 60)
-    s -= m * 60
-    return '%dm %ds' % (m, s)
+    h = math.floor(s/3600)
+    s -= h*3600
+    m = math.floor(s/60)
+    s -= m*60
+    return f'{h:.0f}h {m:.0f}m {s:.2f}s'
 
 def compute_multihots(l,probs):
     assert len(l) > 0
@@ -182,10 +166,6 @@ def check_dir(directory):
         os.makedirs(directory)
     return exists_already
 
-def torch_save(checkpoint,directory,fname):
-    check_dir(directory)
-    torch.save(checkpoint,os.path.join(directory,fname))
-
 def np_save(array,directory,fname,verbose=False):
     check_dir(directory)
     save_path = os.path.join(directory,fname)
@@ -195,29 +175,5 @@ def np_save(array,directory,fname,verbose=False):
 def np_savez(data_dict,directory,fname):
     check_dir(directory)
     np.savez(os.path.join(directory,fname),**data_dict)
-
-def apply_maybe_multiproc(func,input_list,split,single):
-    if single:
-        output_list = [func(item) for item in input_list]
-    else:
-        list_of_lists = []
-        ctx = mp.get_context("spawn")
-        num_splits = math.ceil(len(input_list)/split)
-        for i in range(num_splits):
-            with ctx.Pool(processes=split) as pool:
-                new_list = pool.map(func, input_list[split*i:split*(i+1)])
-            if num_splits != 1: print(f'finished {i}th split section')
-            list_of_lists.append(new_list)
-        output_list = [item for sublist in list_of_lists for item in sublist]
-    return output_list
-
-def show_gpu_memory():
-    mem_used = 0
-    for obj in gc.get_objects():
-        try:
-            if torch.is_tensor(obj) or hasattr(obj, 'data') and torch.is_tensor(obj.data):
-                mem_used += obj.element_size() * obj.nelement()
-        except: pass
-    print(f"GPU memory usage: {mem_used}")
 
 def rmi_func(pred,gt): return round(mi_func(pred,gt),4)

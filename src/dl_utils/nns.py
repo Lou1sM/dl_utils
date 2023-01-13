@@ -164,5 +164,3 @@ class EncoderStacked(nn.Module):
     @property
     def device(self):
         return self.enc.block1[0][0].weight.device
-
-

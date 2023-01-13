@@ -1,7 +1,13 @@
-import torch
+try:
+    import torch
+except ImportError:
+    pass
 import numpy as np
 import os
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    pass
 
 def to_float_tensor(item): return item.float().div_(255.)
 def add_colour_dimension(item):
@@ -54,6 +60,8 @@ def numpyify(x):
     if isinstance(x,np.ndarray): return x
     elif isinstance(x,list): return np.array(x)
     elif torch.is_tensor(x): return x.detach().cpu().numpy()
+    else:
+        raise TypeError(f"can only numpyify an array, list or tensor; received object of type {type(x)}")
 
 def mean_off_diagonal(mat):
     upper_sum = np.triu(mat,1).sum()
@@ -68,12 +76,23 @@ def print_tensors(*tensors):
     print(*[t.item() for t in tensors])
 
 def display_image(t):
+    ready_for_display = displayify(t)
+    plt.imshow(ready_for_display); plt.show()
+    #a = numpyify(t.squeeze())
+    #if a.ndim==2:
+    #    plt.imshow(a); plt.show()
+    #elif a.ndim==3 and a.shape[0]==3:
+    #    plt.imshow(np.transpose(a,(1,2,0))); plt.show()
+    #elif a.ndim==3 and a.shape[2]==3:
+    #    plt.imshow(a); plt.show()
+    #else:
+    #    raise TypeError(f"invalid tensor shape {a.shape} for displaying images")
+
+def displayify(t):
     a = numpyify(t.squeeze())
-    if a.ndim==2:
-        plt.imshow(a); plt.show()
-    elif a.ndim==3 and a.shape[0]==3:
-        plt.imshow(np.transpose(a,(1,2,0))); plt.show()
-    elif a.ndim==3 and a.shape[2]==3:
-        plt.imshow(a); plt.show()
+    if a.ndim==2 or (a.ndim==3 and a.shape[2] in [1,3]):
+        return a
+    elif a.ndim==3 and a.shape[0] in [1,3]:
+        return np.transpose(a,(1,2,0))
     else:
         raise TypeError(f"invalid tensor shape {a.shape} for displaying images")
