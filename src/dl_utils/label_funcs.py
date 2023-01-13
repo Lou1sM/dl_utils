@@ -1,4 +1,5 @@
 import numpy as np
+import math
 try:
     import torch
 except ImportError:
@@ -44,7 +45,7 @@ def translate_labellings(from_labels,to_labels,subsample_size='none',preserve_si
     min_num_labs = min(num_from_labs,num_to_labs)
     if abs(num_from_labs-num_to_labs) >= min_num_labs/2 or min_num_labs==1:
         warnings.warn(f"You're translating a labelling with {num_from_labs} different labels into one with {num_to_labs}")
-    trans_dict, leftovers = get_trans_dict(from_labels,to_labels,subsample_size,preserve_sizes)
+    trans_dict = get_trans_dict(from_labels,to_labels,subsample_size,preserve_sizes)
     return np.array([trans_dict[l] for l in from_labels])
 
 def get_trans_dict(from_labels,to_labels,subsample_size='none',preserve_sizes=False):
@@ -62,59 +63,77 @@ def get_trans_dict(from_labels,to_labels,subsample_size='none',preserve_sizes=Fa
     to_labels_compressed, tdt, _ = compress_labels(to_labels)
     reverse_tdf = {v:k for k,v in tdf.items()}
     reverse_tdt = {v:k for k,v in tdt.items()}
-    #cost_matrix = compute_cost_matrix(from_labels_compressed,to_labels_compressed,subsample_size)
-    #trans_dict = get_trans_dict_from_cost_mat(cost_matrix)
-
-    if num_from_labs <= num_to_labs:
-        trans_dict = get_fanout_trans_dict(from_labels_compressed,to_labels_compressed,subsample_size)
-        leftovers = set([x for x in unique_labels(to_labels_compressed) if x not in trans_dict.values()])
-    else:
-        trans_dict,leftovers = get_fanin_trans_dict(from_labels_compressed,to_labels_compressed,subsample_size,preserve_sizes)
-    if not len(trans_dict) + len(leftovers) == max(num_from_labs,num_to_labs): set_trace()
-    # account for the possible changes in the above compression
-    trans_dict = {reverse_tdf[k]:reverse_tdt[v] for k,v in trans_dict.items()}
-    if preserve_sizes and num_from_labs > num_to_labs:
+    cost_matrix = compute_cost_matrix(from_labels_compressed,to_labels_compressed,subsample_size)
+    #if num_from_labs <= num_to_labs:
+    #    trans_dict = get_fanout_trans_dict(from_labels_compressed,to_labels_compressed,subsample_size)
+    #    leftovers = set([x for x in unique_labels(to_labels_compressed) if x not in trans_dict.values()])
+    #else:
+    #    trans_dict,leftovers = get_fanin_trans_dict(from_labels_compressed,to_labels_compressed,subsample_size,preserve_sizes)
+    #if not len(trans_dict) + len(leftovers) == max(num_from_labs,num_to_labs): set_trace()
+    # Account for the possible changes in the above compression
+    if preserve_sizes:
+        trans_dict = simple_get_trans_dict_from_cost_mat(cost_matrix)
+        trans_dict = {reverse_tdf[k]:reverse_tdt[v] for k,v in trans_dict.items()}
+        leftovers = set([x for x in range(num_from_labs) if x not in trans_dict.keys()])
         for i in leftovers:
             tl = reverse_tdf[i]
             assert tl not in trans_dict.keys()
             missing_target = min([i for i in range(num_from_labs) if i not in trans_dict.values()])
             trans_dict[tl]=missing_target
-        if not set(trans_dict.keys()) == unique_labels(from_labels): set_trace()
-
+    else:
+        trans_dict = get_trans_dict_from_cost_mat(cost_matrix)
+        trans_dict = {reverse_tdf[k]:reverse_tdt[v] for k,v in trans_dict.items()}
+    #if preserve_sizes and num_from_labs > num_to_labs:
+    #    for i in leftovers:
+    #        tl = reverse_tdf[i]
+    #        assert tl not in trans_dict.keys()
+    #        missing_target = min([i for i in range(num_from_labs) if i not in trans_dict.values()])
+    #        trans_dict[tl]=missing_target
+        #if not set(trans_dict.keys()) == unique_labels(from_labels): set_trace()
+    if not len(trans_dict) == num_from_labs:
+        breakpoint()
     trans_dict[-1] = -1
-    return trans_dict,leftovers
-    #return trans_dict
+    #return trans_dict,leftovers
+    return trans_dict
 
-#def get_trans_dict_from_cost_mat(cost_matrix):
-#    m,n = cost_matrix.shape # m is from, n is to
-#    if m!=n:
-#        inf_like = max(cost_matrix.shape) * cost_matrix.max() + 1 # big enough to never be assigned
-#        if m < n:
-#            cost_matrix = np.concatenate([cost_matrix,inf_like*np.ones([n-m,n])],axis=0)
-#        else:
-#            cost_matrix = np.concatenate([cost_matrix,inf_like*np.ones([m,m-n])],axis=1)
-#    row_ind, col_ind = linear_sum_assignment(cost_matrix)
-#    trans_dict = {r:col_ind[r] for r in range(m)}
-#    return trans_dict
-#
-#def compute_cost_matrix(from_labels,to_labels,subsample_size):
-#    unique_from_labels = [l for l in unique_labels(from_labels) if l != -1]
-#    unique_to_labels = [l for l in unique_labels(to_labels) if l != -1]
-#    if subsample_size == 'none':
-#        return np.array([[label_assignment_cost(from_labels,to_labels,l1,l2) for l2 in unique_to_labels] for l1 in unique_from_labels])
-#    else:
-#        num_trys = 0
-#        while True:
-#            num_trys += 1
-#            if num_trys == 5: set_trace()
-#            if subsample_size > len(from_labels):
-#                from_labels_subsample,to_labels_subsample = from_labels,to_labels
-#            else:
-#                sample_indices = np.random.choice(range(from_labels.shape[0]),subsample_size,replace=False)
-#                from_labels_subsample = from_labels[sample_indices]
-#                to_labels_subsample = to_labels[sample_indices]
-#            if unique_labels(from_labels_subsample) == set(unique_from_labels) and unique_labels(to_labels_subsample) == set(unique_to_labels): break
-#        return np.array([[label_assignment_cost(from_labels_subsample,to_labels_subsample,l1,l2) for l2 in unique_from_labels] for l1 in unique_from_labels])
+def simple_get_trans_dict_from_cost_mat(cost_matrix):
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+    return {k:v for k,v in enumerate(col_ind)}
+
+def get_trans_dict_from_cost_mat(cost_matrix):
+    m,n = cost_matrix.shape # m is from, n is to
+    if m <= n:
+        return simple_get_trans_dict_from_cost_mat(cost_matrix)
+    else: # tall thin, bad because some rows won't be assigned
+        num_replications_needed = math.ceil(m/n)
+        cost_matrix = np.tile(cost_matrix,(1,num_replications_needed))
+        row_ind, col_ind = linear_sum_assignment(cost_matrix)
+        return {r:col_ind[r]%n for r in row_ind}
+    #else:
+        #trans_dict = simple_get_trans_dict_from_cost_mat(cost_matrix)
+        #leftovers = set([x for x in range(m) if x not in trans_dict.keys()])
+        #for i in leftovers:
+            #missing_target = min([i for i in range(m) if i not in trans_dict.values()])
+            #trans_dict[tl]=missing_target
+
+def compute_cost_matrix(from_labels,to_labels,subsample_size):
+    unique_from_labels = [l for l in unique_labels(from_labels) if l != -1]
+    unique_to_labels = [l for l in unique_labels(to_labels) if l != -1]
+    if subsample_size == 'none':
+        return np.array([[label_assignment_cost(from_labels,to_labels,l1,l2) for l2 in unique_to_labels] for l1 in unique_from_labels])
+    else:
+        num_trys = 0
+        while True:
+            num_trys += 1
+            if num_trys == 5: set_trace()
+            if subsample_size > len(from_labels):
+                from_labels_subsample,to_labels_subsample = from_labels,to_labels
+            else:
+                sample_indices = np.random.choice(range(from_labels.shape[0]),subsample_size,replace=False)
+                from_labels_subsample = from_labels[sample_indices]
+                to_labels_subsample = to_labels[sample_indices]
+            if unique_labels(from_labels_subsample) == set(unique_from_labels) and unique_labels(to_labels_subsample) == set(unique_to_labels): break
+        return np.array([[label_assignment_cost(from_labels_subsample,to_labels_subsample,l1,l2) for l2 in unique_from_labels] for l1 in unique_from_labels])
 
 def get_fanout_trans_dict(from_labels,to_labels,subsample_size):
     unique_from_labels = [l for l in unique_labels(from_labels) if l != -1]

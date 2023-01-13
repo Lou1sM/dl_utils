@@ -44,7 +44,7 @@ assert ny==5
 tx = label_funcs.get_num_labels(label_funcs.translate_labellings(x,y,preserve_sizes=True))
 assert tx==6
 tx1 = label_funcs.get_num_labels(label_funcs.translate_labellings(x,y,preserve_sizes=False))
-assert tx1==5
+assert tx1==4
 
 label_funcs.get_num_labels(label_funcs.translate_labellings(l2,l3))
 label_funcs.get_num_labels(label_funcs.translate_labellings(l2,l3,preserve_sizes=True))
