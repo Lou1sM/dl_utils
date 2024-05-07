@@ -62,12 +62,20 @@ for _ in range(10):
     x=np.random.randint(test_num_labs,size=(test_size))
     assert label_funcs.label_counts(x) == label_funcs.label_counts_without_torch(x)
 
+continuous_labels = np.array([[0.33333333, 0.55555556, 1., 0.85714286, 0.66666667, 0.71428571],
+       [0.33333333, 0.55555556, 0.55555556, 1., 0.33333333, 0.42857143],
+       [0.55555556, 1.        , 0.22222222, 0.14285714, 0.33333333, 0.71428571],
+       [0.55555556, 0.33333333, 0.44444444, 0.57142857, 0., 0.78571429],
+       [1.        , 0.77777778, 0.44444444, 0.14285714, 1., 0.],
+       [0.        , 0.88888889, 0.        , 0.57142857, 0.66666667, 0.71428571]])
 
-babled = np.random.randint(10,size=(5,1000))
-babled1 = [np.random.randint(10,size=(1000)) for _ in range(5)]
-babled_wrong = np.random.randint(10,size=(5,1000,6))
-label_funcs.debable(babled,pivot='none')
-label_funcs.debable(babled1,pivot='none')
+print(continuous_labels, '\n-->\n',label_funcs.discretize_labels(continuous_labels))
+
+babeled = np.random.randint(10,size=(5,1000))
+babeled1 = [np.random.randint(10,size=(1000)) for _ in range(5)]
+babeled_wrong = np.random.randint(10,size=(5,1000,6))
+label_funcs.debable(babeled,pivot='none')
+label_funcs.debable(babeled1,pivot='none')
 label_funcs.dummy_labels(7,110)
 print("Should see TranslationError:")
-label_funcs.debable(babled_wrong,pivot='none')
+label_funcs.debable(babeled_wrong,pivot='none')

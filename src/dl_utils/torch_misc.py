@@ -17,6 +17,21 @@ class CifarLikeDataset(data.Dataset):
             batch_x = self.transform(batch_x)
         return batch_x, batch_y
 
+class NPDataset(data.Dataset):
+    def __init__(self,*arrs,transform=None):
+        assert all(arrs[0].shape[0] == a.shape[0] for a in arrs)
+        self.arrs = arrs
+        self.transform = transform
+    def __len__(self): return self.arrs[0].shape[0]
+    def __getitem__(self,idx):
+        x = self.arrs[0][idx]
+        if self.transform:
+            x = self.transform(x)
+        if len(self.arrs)==1:
+            return x
+        y = self.arrs[1][idx]
+        return x, y
+
 def save_and_check(enc,dec,fname):
     torch.save({'enc': enc, 'dec': dec},fname)
     loaded = torch.load(fname)
@@ -49,4 +64,4 @@ def show_gpu_memory():
             if torch.is_tensor(obj) or hasattr(obj, 'data') and torch.is_tensor(obj.data):
                 mem_used += obj.element_size() * obj.nelement()
         except: pass
-    print(f"GPU memory usage: {mem_used}")
+    print(f"GPU memory usage: {mem_used}bytes")

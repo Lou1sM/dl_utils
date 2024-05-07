@@ -65,7 +65,12 @@ def asMinutes(s):
     s -= h*3600
     m = math.floor(s/60)
     s -= m*60
-    return f'{h:.0f}h {m:.0f}m {s:.2f}s'
+    if h==0 and m==0:
+        return f'{s:.2f}s'
+    elif h==0:
+        return f'{m:.0f}m {s:.2f}s'
+    else:
+        return f'{h:.0f}h {m:.0f}m {s:.2f}s'
 
 def compute_multihots(l,probs):
     assert len(l) > 0

@@ -53,7 +53,8 @@ def noiseify(pytensor,constant):
 
 def oheify(x):
     target_category = torch.argmax(x, dim=1)
-    ohe_target = (torch.arange(x.shape[1]).to(x.device) == target_category[:,None])[:,:,None,None].float()
+    #ohe_target = (torch.arange(x.shape[1]).to(x.device) == target_category[:,None])[:,:,None,None].float()
+    ohe_target = (torch.arange(x.shape[1]).to(x.device) == target_category[:,None]).float()
     return target_category, ohe_target
 
 def numpyify(x):
